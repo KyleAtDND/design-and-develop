@@ -479,7 +479,21 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   // Add Theme Support
-  function add_woocommerce_support() {
+  function add_woocommerce_support_custom() {
     add_theme_support( 'woocommerce' );
   }
-  add_action( 'after_setup_theme', 'add_woocommerce_support' );
+  add_action( 'after_setup_theme', 'add_woocommerce_support_custom' );
+
+//-----------------------------------------------------------------------------------
+//  Github Plugin Organization
+//-----------------------------------------------------------------------------------
+
+  add_filter( 'github_updater_set_options', function () {
+    return array(
+      //'my-private-theme'    => 'kjasdp984298asdvhaljsg984aljhgosrpfiu',
+      'github_access_token' => '1005ec7a24117eb652228acc44a3242127bcd903',
+    );
+  } );
+
+
+  add_filter( 'github_updater_hide_settings', '__return_true' );
