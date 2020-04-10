@@ -491,10 +491,19 @@ if ( ! defined( 'ABSPATH' ) ) {
   // Set Options
   /*add_filter( 'github_updater_set_options', function () {
     return array(
-      //'my-private-theme'    => 'kjasdp984298asdvhaljsg984aljhgosrpfiu',
-      'github_access_token' => '4462acc556d73235ecedd6e7e8e689d80ae93b55',
+      //'my-private-theme'    => '',
+      'github_access_token' => '',
     );
   } );*/
 
   // Hide Settings
   //add_filter( 'github_updater_hide_settings', '__return_true' );
+
+//-----------------------------------------------------------------------------------
+//  WP Enqueue Styles
+//-----------------------------------------------------------------------------------
+
+  add_action( 'wp_enqueue_scripts', function() {
+    wp_enqueue_style( 'design-and-develop-style', get_stylesheet_uri() );
+    //wp_add_inline_style( 'design-and-develop-style', $css );
+  }, 0 );
