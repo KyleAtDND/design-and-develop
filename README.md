@@ -1,2 +1,2 @@
-# design-and-develop-base-theme
-design &amp; develop base theme
+# design-and-develop
+design &amp; develop base theme for us with Brizy
