@@ -489,12 +489,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   // Set Options
-  add_filter( 'github_updater_set_options', function () {
+  /*add_filter( 'github_updater_set_options', function () {
     return array(
       //'my-private-theme'    => 'kjasdp984298asdvhaljsg984aljhgosrpfiu',
       'github_access_token' => '4462acc556d73235ecedd6e7e8e689d80ae93b55',
     );
-  } );
+  } );*/
 
   // Hide Settings
   //add_filter( 'github_updater_hide_settings', '__return_true' );
