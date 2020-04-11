@@ -504,9 +504,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   add_action( 'wp_enqueue_scripts', function() {
-    wp_enqueue_style( 'design-and-develop-style', get_stylesheet_uri() );
+    //wp_enqueue_style( 'design-and-develop-style', get_stylesheet_uri() );
     //wp_add_inline_style( 'design-and-develop-style', $css );
   }, 0 );
+
+  add_action( 'wp_head', function() {
+    echo '<style>
+     .grecaptcha-badge {
+        display: none;
+      }
+    </style>';
+  });
 
 //-----------------------------------------------------------------------------------
 //  Refresh Styles
