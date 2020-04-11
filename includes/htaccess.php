@@ -161,21 +161,21 @@ if ( ! defined( 'ABSPATH' ) ) {
     // Recreate DND marker.
     $marker = '# BEGIN DND Theme v' . DND_VERSION . PHP_EOL;
 
-    $marker .= <<<HTACCESS
-    ############## Essentials ##############
-      # Limit server request methods to GET and PUT
-      Options -ExecCGI -Indexes +FollowSymLinks
-      # Rewrite
-      RewriteEngine on
-      RewriteOptions Inherit
-      RewriteBase /
-    ############## Performance ##############
-      # Explicitly disable caching for scripts and other dynamic files
-      <FilesMatch "\.(pl|php|cgi|spl|scgi|fcgi)$">
-        Header unset Cache-Control
-      </FilesMatch>
+$marker .= <<<HTACCESS
+############## Essentials ##############
+  # Limit server request methods to GET and PUT
+  Options -ExecCGI -Indexes +FollowSymLinks
+  # Rewrite
+  RewriteEngine on
+  RewriteOptions Inherit
+  RewriteBase /
+############## Performance ##############
+  # Explicitly disable caching for scripts and other dynamic files
+  <FilesMatch "\.(pl|php|cgi|spl|scgi|fcgi)$">
+    Header unset Cache-Control
+  </FilesMatch>
 
-    HTACCESS;
+HTACCESS;
 
     $marker .= get_dnd_htaccess_charset();
     $marker .= get_dnd_htaccess_etag();
@@ -197,22 +197,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   function get_dnd_htaccess_tricks() {
-    $rules = <<<HTACCESS
-    ############## Usability Tricks ##############
-      # Automatically corect simple speling erors
-      <IfModule mod_speling.c>
-        CheckSpelling On
-      </IfModule>
-      # View Documents in New Tabs Instead of Download
-      <IfModule mod_headers.c>
-        <FilesMatch "\.(doc?x|dotx|pdf)$">
-          Header set Content-Disposition inline
-        </FilesMatch>
-      </IfModule>
-    ############## MP4 Fixes ##############
-      SetEnvIfNoCase Request_URI get_file\.mp4$ no-gzip dont-vary
+$rules = <<<HTACCESS
+############## Usability Tricks ##############
+  # Automatically corect simple speling erors
+  <IfModule mod_speling.c>
+    CheckSpelling On
+  </IfModule>
+  # View Documents in New Tabs Instead of Download
+  <IfModule mod_headers.c>
+    <FilesMatch "\.(doc?x|dotx|pdf)$">
+      Header set Content-Disposition inline
+    </FilesMatch>
+  </IfModule>
+############## MP4 Fixes ##############
+  SetEnvIfNoCase Request_URI get_file\.mp4$ no-gzip dont-vary
 
-    HTACCESS;
+HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_tricks', $rules );
 
@@ -228,76 +228,76 @@ if ( ! defined( 'ABSPATH' ) ) {
     $rules = '';
 
     if ( $block )
-    $rules .= <<<HTACCESS
-    # Block WordPress xmlrpc.php requests
-    <Files xmlrpc.php>
-      order deny,allow
-      deny from all
-    </Files>
-    HTACCESS;
+$rules .= <<<HTACCESS
+# Block WordPress xmlrpc.php requests
+<Files xmlrpc.php>
+  order deny,allow
+  deny from all
+</Files>
+HTACCESS;
 
-    $rules .= <<<HTACCESS
-    #BASIC ID=1
-    RedirectMatch 409 .(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$
-    ServerSignature Off
-    <IfModule mod_rewrite.c>
-      RewriteEngine On
-      RewriteBase /
-      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
-      RewriteRule ^readme*.*html$ /forbidden [L,QSA]
-      RewriteRule ^license*.*txt$ /forbidden [L,QSA]
-      RewriteRule ^wp-config*.*php$ /forbidden [L,QSA]
-    </IfModule>
-    #BASIC
+$rules .= <<<HTACCESS
+#BASIC ID=1
+RedirectMatch 409 .(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$
+ServerSignature Off
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+  RewriteRule ^readme*.*html$ /forbidden [L,QSA]
+  RewriteRule ^license*.*txt$ /forbidden [L,QSA]
+  RewriteRule ^wp-config*.*php$ /forbidden [L,QSA]
+</IfModule>
+#BASIC
 
-    #BLOCK WP FILE ACCESS  ID=2
-    # Block the include-only files.
-    <IfModule mod_rewrite.c>
-      RewriteEngine On
-      RewriteBase /
-      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
-      RewriteRule ^wp-admin/includes/ /forbidden [NC,L]
-      RewriteRule ^wp-includes/[^/]+.php$ /forbidden [NC,L]
-      RewriteRule ^wp-content/uploads/(.*).php$ /forbidden [NC,L]
-      RewriteRule ^wp-includes/js/tinymce/langs/.+.php /forbidden [NC,L]
-      RewriteRule ^wp-includes/theme-compat/ /forbidden [NC,L]
-    </IfModule>
-    #BLOCK WP FILE ACCESS
+#BLOCK WP FILE ACCESS  ID=2
+# Block the include-only files.
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+  RewriteRule ^wp-admin/includes/ /forbidden [NC,L]
+  RewriteRule ^wp-includes/[^/]+.php$ /forbidden [NC,L]
+  RewriteRule ^wp-content/uploads/(.*).php$ /forbidden [NC,L]
+  RewriteRule ^wp-includes/js/tinymce/langs/.+.php /forbidden [NC,L]
+  RewriteRule ^wp-includes/theme-compat/ /forbidden [NC,L]
+</IfModule>
+#BLOCK WP FILE ACCESS
 
-    #BLOCK DEBUG LOG ACCESS
-    <IfModule mod_rewrite.c>
-      RewriteEngine On
-      RewriteBase /
-      RewriteRule ^debug*.*log$ /forbidden [L,QSA]
-    </IfModule>
-    #BLOCK DEBUG LOG ACCESS
+#BLOCK DEBUG LOG ACCESS
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+  RewriteRule ^debug*.*log$ /forbidden [L,QSA]
+</IfModule>
+#BLOCK DEBUG LOG ACCESS
 
-    #FORBID PROXY COMMENT POSTING ID=7
-    <IfModule mod_rewrite.c>
-      RewriteEngine On
-      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
-      RewriteCond %{REQUEST_METHOD} ^POST
-      RewriteCond %{HTTP:VIA} !^$ [OR]
-      RewriteCond %{HTTP:FORWARDED} !^$ [OR]
-      RewriteCond %{HTTP:USERAGENT_VIA} !^$ [OR]
-      RewriteCond %{HTTP:X_FORWARDED_FOR} !^$ [OR]
-      RewriteCond %{HTTP:X_FORWARDED_HOST} !^$ [OR]
-      RewriteCond %{HTTP:PROXY_CONNECTION} !^$ [OR]
-      RewriteCond %{HTTP:XPROXY_CONNECTION} !^$ [OR]
-      RewriteCond %{HTTP:HTTP_PC_REMOTE_ADDR} !^$ [OR]
-      RewriteCond %{HTTP:HTTP_CLIENT_IP} !^$
-      RewriteRule wp-comments-post\.php /forbidden [NC]
-    </IfModule>
-    #FORBID PROXY COMMENT POSTING
+#FORBID PROXY COMMENT POSTING ID=7
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+  RewriteCond %{REQUEST_METHOD} ^POST
+  RewriteCond %{HTTP:VIA} !^$ [OR]
+  RewriteCond %{HTTP:FORWARDED} !^$ [OR]
+  RewriteCond %{HTTP:USERAGENT_VIA} !^$ [OR]
+  RewriteCond %{HTTP:X_FORWARDED_FOR} !^$ [OR]
+  RewriteCond %{HTTP:X_FORWARDED_HOST} !^$ [OR]
+  RewriteCond %{HTTP:PROXY_CONNECTION} !^$ [OR]
+  RewriteCond %{HTTP:XPROXY_CONNECTION} !^$ [OR]
+  RewriteCond %{HTTP:HTTP_PC_REMOTE_ADDR} !^$ [OR]
+  RewriteCond %{HTTP:HTTP_CLIENT_IP} !^$
+  RewriteRule wp-comments-post\.php /forbidden [NC]
+</IfModule>
+#FORBID PROXY COMMENT POSTING
 
-    #WPSCAN ID=19
-    <IfModule mod_rewrite.c>
-      RewriteEngine on
-      RewriteRule ^(.*)/plugins/(.*)readme\.(txt|html)$ /forbidden [NC,L] 
-    </IfModule>
-    #WPSCAN
+#WPSCAN ID=19
+<IfModule mod_rewrite.c>
+  RewriteEngine on
+  RewriteRule ^(.*)/plugins/(.*)readme\.(txt|html)$ /forbidden [NC,L] 
+</IfModule>
+#WPSCAN
 
-    HTACCESS;
+HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_security', $rules );
 
@@ -357,171 +357,171 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   function get_dnd_htaccess_mod_expires() {
-    $rules = <<<HTACCESS
-    ############## Proper MIME type for all files ##############
-      <IfModule mod_mime.c>
-        # Standard text files
-        AddType text/html .html .htm
-        AddType text/css .css
-        AddType text/plain .txt
-        AddType text/richtext .rtf .rtx
-        AddType application/javascript .js
-        AddType text/x-javascript .js2
-        AddType text/javascript .js3
-        AddType text/x-js .js4
-        AddType text/xsd .xsd
-        AddType text/xsl .xsl
-        AddType text/xml .xml
-        AddType application/java .class
-        AddType application/json .json
-        AddType text/x-component .htc
-        # Feed files
-        AddType application/rss+xml .rss
-        AddType application/atom+xml .atom
-        # Image files
-        AddType image/svg+xml .svg .svgz
-        AddEncoding gzip .svgz  
-        AddType image/bmp .bmp
-        AddType image/gif .gif
-        AddType image/x-icon .ico
-        AddType image/jpeg .jpg .jpeg .jpe
-        AddType image/png .png
-        AddType image/webp .webp
-        AddType image/tiff .tif .tiff
-        # Audio files
-        AddType audio/midi .mid .midi
-        AddType audio/ogg .ogg
-        AddType audio/mpeg .mp3 .m4a
-        AddType audio/x-realaudio .ra .ram
-        AddType audio/wma .wma
-        AddType audio/wav .wav
-        # Movie files
-        AddType video/ogg .ogv
-        AddType video/webm .webm
-        AddType video/asf .asf .asx .wax .wmv .wmx
-        AddType video/avi .avi
-        AddType video/divx .divx
-        AddType video/quicktime .mov .qt
-        AddType video/mp4 .mp4 .m4v
-        AddType video/mpeg .mpeg .mpg .mpe
-        # Other
-        AddType application/x-gzip .gz .gzip
-        AddType application/zip .zip
-        AddType application/x-tar .tar
-        AddType application/x-shockwave-flash .swf
-        AddType text/cache-manifest appcache manifest
-        AddType application/octet-stream safariextz
-        AddType application/x-web-app-manifest+json webapp
-        AddType text/x-vcard .vcf
-        # Documents
-        AddType application/pdf .pdf
-        AddType application/vnd.ms-access .mdb
-        AddType application/vnd.ms-project .mpp
-        AddType application/vnd.ms-powerpoint .pot .pps .ppt .pptx .potx .ppam .ppsm .ppsx .pptm
-        AddType application/vnd.ms-excel .xla .xls .xlsx .xlt .xlw .xlsb .xlsm .xltx .xlam
-        AddType application/vnd.ms-write .wri
-        AddType application/vnd.ms-word .docx .dotx
-        AddType application/x-msdownload .exe
-        AddType application/vnd.oasis.opendocument.database .odb
-        AddType application/vnd.oasis.opendocument.chart .odc
-        AddType application/vnd.oasis.opendocument.formula .odf
-        AddType application/vnd.oasis.opendocument.graphics .odg
-        AddType application/vnd.oasis.opendocument.presentation .odp
-        AddType application/vnd.oasis.opendocument.spreadsheet .ods
-        AddType application/vnd.oasis.opendocument.text .odt
-        # Webfonts
-        AddType application/vnd.ms-fontobject .eot
-        AddType font/opentype .otf
-        AddType application/x-font-ttf .ttf .ttc
-        AddType application/x-font-woff .woff
-        AddType application/x-font-woff2 .woff2
-      </IfModule>
+$rules = <<<HTACCESS
+############## Proper MIME type for all files ##############
+  <IfModule mod_mime.c>
+    # Standard text files
+    AddType text/html .html .htm
+    AddType text/css .css
+    AddType text/plain .txt
+    AddType text/richtext .rtf .rtx
+    AddType application/javascript .js
+    AddType text/x-javascript .js2
+    AddType text/javascript .js3
+    AddType text/x-js .js4
+    AddType text/xsd .xsd
+    AddType text/xsl .xsl
+    AddType text/xml .xml
+    AddType application/java .class
+    AddType application/json .json
+    AddType text/x-component .htc
+    # Feed files
+    AddType application/rss+xml .rss
+    AddType application/atom+xml .atom
+    # Image files
+    AddType image/svg+xml .svg .svgz
+    AddEncoding gzip .svgz  
+    AddType image/bmp .bmp
+    AddType image/gif .gif
+    AddType image/x-icon .ico
+    AddType image/jpeg .jpg .jpeg .jpe
+    AddType image/png .png
+    AddType image/webp .webp
+    AddType image/tiff .tif .tiff
+    # Audio files
+    AddType audio/midi .mid .midi
+    AddType audio/ogg .ogg
+    AddType audio/mpeg .mp3 .m4a
+    AddType audio/x-realaudio .ra .ram
+    AddType audio/wma .wma
+    AddType audio/wav .wav
+    # Movie files
+    AddType video/ogg .ogv
+    AddType video/webm .webm
+    AddType video/asf .asf .asx .wax .wmv .wmx
+    AddType video/avi .avi
+    AddType video/divx .divx
+    AddType video/quicktime .mov .qt
+    AddType video/mp4 .mp4 .m4v
+    AddType video/mpeg .mpeg .mpg .mpe
+    # Other
+    AddType application/x-gzip .gz .gzip
+    AddType application/zip .zip
+    AddType application/x-tar .tar
+    AddType application/x-shockwave-flash .swf
+    AddType text/cache-manifest appcache manifest
+    AddType application/octet-stream safariextz
+    AddType application/x-web-app-manifest+json webapp
+    AddType text/x-vcard .vcf
+    # Documents
+    AddType application/pdf .pdf
+    AddType application/vnd.ms-access .mdb
+    AddType application/vnd.ms-project .mpp
+    AddType application/vnd.ms-powerpoint .pot .pps .ppt .pptx .potx .ppam .ppsm .ppsx .pptm
+    AddType application/vnd.ms-excel .xla .xls .xlsx .xlt .xlw .xlsb .xlsm .xltx .xlam
+    AddType application/vnd.ms-write .wri
+    AddType application/vnd.ms-word .docx .dotx
+    AddType application/x-msdownload .exe
+    AddType application/vnd.oasis.opendocument.database .odb
+    AddType application/vnd.oasis.opendocument.chart .odc
+    AddType application/vnd.oasis.opendocument.formula .odf
+    AddType application/vnd.oasis.opendocument.graphics .odg
+    AddType application/vnd.oasis.opendocument.presentation .odp
+    AddType application/vnd.oasis.opendocument.spreadsheet .ods
+    AddType application/vnd.oasis.opendocument.text .odt
+    # Webfonts
+    AddType application/vnd.ms-fontobject .eot
+    AddType font/opentype .otf
+    AddType application/x-font-ttf .ttf .ttc
+    AddType application/x-font-woff .woff
+    AddType application/x-font-woff2 .woff2
+  </IfModule>
 
-    ############## Expires headers (for better cache control) ##############
-      <IfModule mod_expires.c>
-        # Enable expiration control
-        ExpiresActive On
-        # Default expiration: 1 hour after request
-        ExpiresDefault "access plus 1 year"
-        # Special requests
-        ExpiresByType text/cache-manifest "access plus 0 seconds"
-        # Standard text files expiration: 1 week after request
-        ExpiresByType text/html "access plus 30 seconds"
-        ExpiresByType text/css "access plus 1 year"
-        ExpiresByType text/plain "access plus 1 year"
-        ExpiresByType text/richtext "access plus 1 year"
-        ExpiresByType application/javascript "access plus 1 year"
-        ExpiresByType text/x-javascript "access plus 1 year"
-        ExpiresByType text/javascript "access plus 1 year"
-        ExpiresByType text/x-js "access plus 1 year"
-        ExpiresByType application/xhtml+xml "access plus 60 seconds"
-        ExpiresByType application/json "access plus 60 seconds"
-        ExpiresByType text/xsd "access plus 60 seconds
-        ExpiresByType text/xsl "access plus 60 seconds
-        ExpiresByType application/java "access plus 60 seconds
-        ExpiresByType text/x-component "access plus 60 seconds
-        # Data
-        ExpiresByType text/xml "access plus 60 seconds
-        ExpiresByType application/json "access plus 60 seconds
-        ExpiresByType application/xml "access plus 60 seconds
-        # Feed
-        ExpiresByType application/rss+xml "access plus 600 seconds
-        ExpiresByType application/atom+xml "access plus 600 seconds
-        # Image
-        ExpiresByType image/gif "access plus 1 year"
-        ExpiresByType image/jpeg "access plus 1 year"
-        ExpiresByType image/png "access plus 1 year"
-        ExpiresByType image/svg+xml "access plus 1 year"
-        ExpiresByType image/tiff "access plus 1 year"
-        ExpiresByType image/x-icon "access plus 1 year"
-        ExpiresByType images/bmp "access plus 1 year"
-        ExpiresByType image/webp "access plus 1 year"
-        # Audio
-        ExpiresByType audio/midi "access plus 1 year"
-        ExpiresByType audio/mpeg "access plus 1 year"
-        ExpiresByType audio/ogg "access plus 1 year"
-        ExpiresByType audio/x-realaudio "access plus 1 year"
-        ExpiresByType audio/wma "access plus 1 year"
-        ExpiresByType audio/wav "access plus 1 year"
-        # Movie
-        ExpiresByType video/avi "access plus 1 year"
-        ExpiresByType video/mpeg "access plus 1 year"
-        ExpiresByType video/mp4 "access plus 1 year"
-        ExpiresByType video/quicktime "access plus 1 year"
-        ExpiresByType video/webm "access plus 1 year"
-        ExpiresByType video/ogg "access plus 1 year"
-        ExpiresByType video/asf "access plus 1 year"
-        ExpiresByType video/divx "access plus 1 year"
-        # Other
-        ExpiresByType application/zip "access plus 1 year"
-        ExpiresByType application/x-tar "access plus 1 year"
-        ExpiresByType application/x-shockwave-flash "access plus 1 year"
-        ExpiresByType application/octet-stream "access plus 600 seconds"
-        ExpiresByType application/x-web-app-manifest+json "access plus 600 seconds"
-        # Documents
-        ExpiresByType application/pdf "access plus 1 year"
-        ExpiresByType application/vnd.ms-access "access plus 1 year"
-        ExpiresByType application/vnd.ms-project "access plus 1 year"
-        ExpiresByType application/vnd.ms-powerpoint "access plus 1 year"
-        ExpiresByType application/vnd.ms-excel "access plus 1 year"
-        ExpiresByType application/vnd.ms-write "access plus 1 year"
-        ExpiresByType application/x-msdownload "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.database "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.chart "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.formula "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.graphics "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.presentation "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.spreadsheet "access plus 1 year"
-        ExpiresByType application/vnd.oasis.opendocument.text "access plus 1 year"
-        # Webfonts
-        ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
-        ExpiresByType font/opentype "access plus 1 year"
-        ExpiresByType application/x-font-ttf "access plus 1 year"
-        ExpiresByType application/x-font-woff "access plus 1 year"
-        ExpiresByType application/x-font-woff2 "access plus 1 year"
-      </IfModule>
+############## Expires headers (for better cache control) ##############
+  <IfModule mod_expires.c>
+    # Enable expiration control
+    ExpiresActive On
+    # Default expiration: 1 hour after request
+    ExpiresDefault "access plus 1 year"
+    # Special requests
+    ExpiresByType text/cache-manifest "access plus 0 seconds"
+    # Standard text files expiration: 1 week after request
+    ExpiresByType text/html "access plus 30 seconds"
+    ExpiresByType text/css "access plus 1 year"
+    ExpiresByType text/plain "access plus 1 year"
+    ExpiresByType text/richtext "access plus 1 year"
+    ExpiresByType application/javascript "access plus 1 year"
+    ExpiresByType text/x-javascript "access plus 1 year"
+    ExpiresByType text/javascript "access plus 1 year"
+    ExpiresByType text/x-js "access plus 1 year"
+    ExpiresByType application/xhtml+xml "access plus 60 seconds"
+    ExpiresByType application/json "access plus 60 seconds"
+    ExpiresByType text/xsd "access plus 60 seconds
+    ExpiresByType text/xsl "access plus 60 seconds
+    ExpiresByType application/java "access plus 60 seconds
+    ExpiresByType text/x-component "access plus 60 seconds
+    # Data
+    ExpiresByType text/xml "access plus 60 seconds
+    ExpiresByType application/json "access plus 60 seconds
+    ExpiresByType application/xml "access plus 60 seconds
+    # Feed
+    ExpiresByType application/rss+xml "access plus 600 seconds
+    ExpiresByType application/atom+xml "access plus 600 seconds
+    # Image
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/svg+xml "access plus 1 year"
+    ExpiresByType image/tiff "access plus 1 year"
+    ExpiresByType image/x-icon "access plus 1 year"
+    ExpiresByType images/bmp "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    # Audio
+    ExpiresByType audio/midi "access plus 1 year"
+    ExpiresByType audio/mpeg "access plus 1 year"
+    ExpiresByType audio/ogg "access plus 1 year"
+    ExpiresByType audio/x-realaudio "access plus 1 year"
+    ExpiresByType audio/wma "access plus 1 year"
+    ExpiresByType audio/wav "access plus 1 year"
+    # Movie
+    ExpiresByType video/avi "access plus 1 year"
+    ExpiresByType video/mpeg "access plus 1 year"
+    ExpiresByType video/mp4 "access plus 1 year"
+    ExpiresByType video/quicktime "access plus 1 year"
+    ExpiresByType video/webm "access plus 1 year"
+    ExpiresByType video/ogg "access plus 1 year"
+    ExpiresByType video/asf "access plus 1 year"
+    ExpiresByType video/divx "access plus 1 year"
+    # Other
+    ExpiresByType application/zip "access plus 1 year"
+    ExpiresByType application/x-tar "access plus 1 year"
+    ExpiresByType application/x-shockwave-flash "access plus 1 year"
+    ExpiresByType application/octet-stream "access plus 600 seconds"
+    ExpiresByType application/x-web-app-manifest+json "access plus 600 seconds"
+    # Documents
+    ExpiresByType application/pdf "access plus 1 year"
+    ExpiresByType application/vnd.ms-access "access plus 1 year"
+    ExpiresByType application/vnd.ms-project "access plus 1 year"
+    ExpiresByType application/vnd.ms-powerpoint "access plus 1 year"
+    ExpiresByType application/vnd.ms-excel "access plus 1 year"
+    ExpiresByType application/vnd.ms-write "access plus 1 year"
+    ExpiresByType application/x-msdownload "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.database "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.chart "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.formula "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.graphics "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.presentation "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.spreadsheet "access plus 1 year"
+    ExpiresByType application/vnd.oasis.opendocument.text "access plus 1 year"
+    # Webfonts
+    ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+    ExpiresByType font/opentype "access plus 1 year"
+    ExpiresByType application/x-font-ttf "access plus 1 year"
+    ExpiresByType application/x-font-woff "access plus 1 year"
+    ExpiresByType application/x-font-woff2 "access plus 1 year"
+  </IfModule>
 
-    HTACCESS;
+HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_mod_expires', $rules );
 
@@ -537,21 +537,21 @@ if ( ! defined( 'ABSPATH' ) ) {
     $charset = preg_replace( '/[^a-zA-Z0-9_\-\.:]+/', '', get_bloginfo( 'charset', 'display' ) );
     $email = get_bloginfo( 'admin_email' );
 
-    $rules = <<<HTACCESS
-    # Use $charset encoding for anything served text/plain or text/html
-    AddDefaultCharset $charset
-    # Force $charset for a number of file formats
-    <IfModule mod_mime.c>
-      AddCharset $charset .atom .css .js .json .rss .vtt .xml
-    </IfModule>
-    # Set the default language
-    DefaultLanguage en-US
-    # Set server timezone
-    SetEnv TZ America/Chicago
-    # Set the server administrator email
-    SetEnv SERVER_ADMIN $email
+$rules = <<<HTACCESS
+# Use $charset encoding for anything served text/plain or text/html
+AddDefaultCharset $charset
+# Force $charset for a number of file formats
+<IfModule mod_mime.c>
+  AddCharset $charset .atom .css .js .json .rss .vtt .xml
+</IfModule>
+# Set the default language
+DefaultLanguage en-US
+# Set server timezone
+SetEnv TZ America/Chicago
+# Set the server administrator email
+SetEnv SERVER_ADMIN $email
 
-    HTACCESS;
+HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_charset', $rules );
 
@@ -563,14 +563,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   function get_dnd_htaccess_etag() {
-    $rules = <<<HTACCESS
-    # FileETag None is not enough for every server.
-    <IfModule mod_headers.c>
-    Header unset ETag
-    </IfModule>
-    FileETag None
+$rules = <<<HTACCESS
+# FileETag None is not enough for every server.
+<IfModule mod_headers.c>
+Header unset ETag
+</IfModule>
+FileETag None
 
-    HTACCESS;
+HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_etag', $rules );
 
