@@ -224,7 +224,19 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   function get_dnd_htaccess_security() {
-    $rules = <<<HTACCESS
+    $block = apply_filters( 'dnd_block_xmlrpc_security', true );
+    $rules = '';
+
+    if ( $block )
+    $rules .= <<<HTACCESS
+    # Block WordPress xmlrpc.php requests
+    <Files xmlrpc.php>
+      order deny,allow
+      deny from all
+    </Files>
+    HTACCESS;
+
+    $rules .= <<<HTACCESS
     #BASIC ID=1
     RedirectMatch 409 .(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$
     ServerSignature Off
