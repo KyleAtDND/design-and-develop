@@ -18,8 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   // DND defines.
-  define( 'DND_VERSION',            '1.0.4' );
-  define( 'DND_PATH',               ealpath( get_template_directory() ) . '/' );
+  define( 'DND_VERSION',            '1.0.5' );
+  define( 'DND_PATH',               realpath( get_template_directory() ) . '/' );
   define( 'DND_INCLUDES_PATH',      realpath( DND_PATH . 'includes/' ) . '/' );
+  define( 'DND_LIBRARIES_PATH',     realpath( DND_PATH . 'libraries/' ) . '/' );
+  define( 'DND_CONFIG_PATH',        WP_CONTENT_DIR . 'wp-config.php' );
   define( 'DND_LOG_PATH',           WP_CONTENT_DIR . 'debug.log' );
   define( 'DND_LOG_URL',            WP_CONTENT_URL . 'debug.log' );

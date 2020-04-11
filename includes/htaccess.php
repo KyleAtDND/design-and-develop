@@ -75,14 +75,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Flush rules
 //-----------------------------------------------------------------------------------
 
-  add_action( 'upgrader_process_complete', function( $info ) {
-    write_log( $info );
-  });
-
-  function flush_dnd_htaccess( $remove_rules = false ) { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+  function flush_dnd_htaccess( $remove_rules = false ) {
     global $is_apache;
 
     if ( ! $is_apache || ( apply_filters( 'dnd_disable_htaccess', false ) && ! $remove_rules ) ) {
@@ -111,7 +107,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     // Check if the file contains the WP rules, before modifying anything.
     $has_wp_rules = dnd_has_wp_htaccess_rules( $ftmp );
 
-    // Remove the WP dnd marker.
+    // Remove the DND marker.
     $ftmp = preg_replace( '/\s*# BEGIN DND Theme.*# END DND Theme\s*?/isU', PHP_EOL . PHP_EOL, $ftmp );
     $ftmp = ltrim( $ftmp );
 
@@ -133,24 +129,16 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Rules test
 //-----------------------------------------------------------------------------------
 
   function dnd_htaccess_rules_test( $rules_name ) {
-    /**
-    * Filters the request arguments
-    *
-    * @author Remy Perona
-    * @since 2.10
-    *
-    * @param array $args Array of argument for the request.
-    */
     $request_args = apply_filters(
       'dnd_htaccess_rules_test_args',
       [
         'redirection' => 0,
         'timeout'     => 5,
-        'sslverify'   => apply_filters( 'https_local_ssl_verify', false ), // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+        'sslverify'   => apply_filters( 'https_local_ssl_verify', false ),
         'user-agent'  => 'wpdndbot',
         'cookies'     => $_COOKIE,
       ]
@@ -166,30 +154,36 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Create htaccess uUle
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_marker() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    // Recreate WP dnd marker.
+  function get_dnd_htaccess_marker() {
+    // Recreate DND marker.
     $marker = '# BEGIN DND Theme v' . DND_VERSION . PHP_EOL;
 
-    /**
-    * Add custom rules before rules added by WP dnd
-    *
-    * @since 2.6
-    *
-    * @param string $before_marker The content of all rules.
-    */
-    $marker .= apply_filters( 'before_dnd_htaccess_rules', '' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+    $marker .= <<<HTACCESS
+    ############## Essentials ##############
+      # Limit server request methods to GET and PUT
+      Options -ExecCGI -Indexes +FollowSymLinks
+      # Rewrite
+      RewriteEngine on
+      RewriteOptions Inherit
+      RewriteBase /
+    ############## Performance ##############
+      # Explicitly disable caching for scripts and other dynamic files
+      <FilesMatch "\.(pl|php|cgi|spl|scgi|fcgi)$">
+        Header unset Cache-Control
+      </FilesMatch>
+
+    HTACCESS;
 
     $marker .= get_dnd_htaccess_charset();
     $marker .= get_dnd_htaccess_etag();
-    $marker .= get_dnd_htaccess_web_fonts_access();
-    $marker .= get_dnd_htaccess_files_match();
+    //$marker .= get_dnd_htaccess_web_fonts_access();
     $marker .= get_dnd_htaccess_mod_expires();
-    $marker .= get_dnd_htaccess_mod_deflate();
-
-    $marker .= apply_filters( 'after_dnd_htaccess_rules', '' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+    //$marker .= get_dnd_htaccess_mod_deflate();
+    $marker .= get_dnd_htaccess_security();
+    $marker .= get_dnd_htaccess_tricks();
 
     $marker .= '# END DND Theme' . PHP_EOL;
 
@@ -199,183 +193,110 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Tricks
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_mod_rewrite() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    // No rewrite rules for multisite.
-    if ( is_multisite() ) {
-      return;
-    }
+  function get_dnd_htaccess_tricks() {
+    $rules = <<<HTACCESS
+    ############## Usability Tricks ##############
+      # Automatically corect simple speling erors
+      <IfModule mod_speling.c>
+        CheckSpelling On
+      </IfModule>
+      # View Documents in New Tabs Instead of Download
+      <IfModule mod_headers.c>
+        <FilesMatch "\.(doc?x|dotx|pdf)$">
+          Header set Content-Disposition inline
+        </FilesMatch>
+      </IfModule>
+    ############## MP4 Fixes ##############
+      SetEnvIfNoCase Request_URI get_file\.mp4$ no-gzip dont-vary
 
-    // No rewrite rules for Korean.
-    if ( defined( 'WPLANG' ) && 'ko_KR' === WPLANG || 'ko_KR' === get_locale() ) {
-      return;
-    }
+    HTACCESS;
 
-    // Get root base.
-    $home_root = dnd_extract_url_component( home_url(), PHP_URL_PATH );
-    $home_root = isset( $home_root ) ? trailingslashit( $home_root ) : '/';
-
-    $site_root = dnd_extract_url_component( site_url(), PHP_URL_PATH );
-    $site_root = isset( $site_root ) ? trailingslashit( $site_root ) : '';
-
-    // Get cache root.
-    if ( strpos( ABSPATH, DND_CACHE_PATH ) === false && isset( $_SERVER['DOCUMENT_ROOT'] ) ) {
-      $cache_root = str_replace( sanitize_text_field( wp_unslash( $_SERVER['DOCUMENT_ROOT'] ) ), '', DND_CACHE_PATH );
-    } else {
-      $cache_root = $site_root . str_replace( ABSPATH, '', DND_CACHE_PATH );
-    }
-
-    $http_host = apply_filters( 'dnd_url_no_dots', false ) ? dnd_remove_url_protocol( home_url() ) : '%{HTTP_HOST}';
-
-    $is_1and1_or_force = apply_filters( 'dnd_force_full_path', strpos( sanitize_text_field( wp_unslash( $_SERVER['DOCUMENT_ROOT'] ) ), '/kunden/' ) === 0 );
-
-    $rules      = '';
-    $gzip_rules = '';
-    $enc        = '';
-
-    if ( $is_1and1_or_force ) {
-      $cache_dir_path = str_replace( '/kunden/', '/', DND_CACHE_PATH ) . $http_host . '%{REQUEST_URI}';
-    } else {
-      $cache_dir_path = '%{DOCUMENT_ROOT}/' . ltrim( $cache_root, '/' ) . $http_host . '%{REQUEST_URI}';
-    }
-
-    if ( function_exists( 'gzencode' ) && apply_filters( 'dnd_force_gzip_htaccess_rules', true ) ) {
-      $rules = '<IfModule mod_mime.c>' . PHP_EOL;
-        $rules .= 'AddType text/html .html_gzip' . PHP_EOL;
-        $rules .= 'AddEncoding gzip .html_gzip' . PHP_EOL;
-      $rules .= '</IfModule>' . PHP_EOL;
-      $rules .= '<IfModule mod_setenvif.c>' . PHP_EOL;
-        $rules .= 'SetEnvIfNoCase Request_URI \.html_gzip$ no-gzip' . PHP_EOL;
-      $rules .= '</IfModule>' . PHP_EOL . PHP_EOL;
-
-      $gzip_rules .= 'RewriteCond %{HTTP:Accept-Encoding} gzip' . PHP_EOL;
-      $gzip_rules .= 'RewriteRule .* - [E=WPR_ENC:_gzip]' . PHP_EOL;
-
-      $enc = '%{ENV:WPR_ENC}';
-    }
-
-    $rules .= '<IfModule mod_rewrite.c>' . PHP_EOL;
-    $rules .= 'RewriteEngine On' . PHP_EOL;
-    $rules .= 'RewriteBase ' . $home_root . PHP_EOL;
-    $rules .= get_dnd_htaccess_ssl_rewritecond();
-    $rules .= dnd_get_webp_rewritecond( $cache_dir_path );
-    $rules .= $gzip_rules;
-    $rules .= 'RewriteCond %{REQUEST_METHOD} GET' . PHP_EOL;
-    $rules .= 'RewriteCond %{QUERY_STRING} =""' . PHP_EOL;
-
-    $cookies = get_dnd_cache_reject_cookies();
-    if ( $cookies ) {
-      $rules .= 'RewriteCond %{HTTP:Cookie} !(' . $cookies . ') [NC]' . PHP_EOL;
-    }
-
-    $uri = get_dnd_cache_reject_uri();
-    if ( $uri ) {
-      $rules .= 'RewriteCond %{REQUEST_URI} !^(' . $uri . ')$ [NC]' . PHP_EOL;
-    }
-
-    $rules .= ! is_dnd_cache_mobile() ? get_dnd_htaccess_mobile_rewritecond() : '';
-
-    $ua = get_dnd_cache_reject_ua();
-    if ( $ua ) {
-      $rules .= 'RewriteCond %{HTTP_USER_AGENT} !^(' . $ua . ').* [NC]' . PHP_EOL;
-    }
-
-    $rules .= 'RewriteCond "' . $cache_dir_path . '/index%{ENV:WPR_SSL}%{ENV:WPR_WEBP}.html' . $enc . '" -f' . PHP_EOL;
-    $rules .= 'RewriteRule .* "' . $cache_root . $http_host . '%{REQUEST_URI}/index%{ENV:WPR_SSL}%{ENV:WPR_WEBP}.html' . $enc . '" [L]' . PHP_EOL;
-    $rules .= '</IfModule>' . PHP_EOL;
-
-    /**
-    * Filter rewrite rules to serve the cache file
-    *
-    * @since 1.0
-    *
-    * @param string $rules Rules that will be printed.
-    */
-    $rules = apply_filters( 'dnd_htaccess_mod_rewrite', $rules );
+    $rules = apply_filters( 'dnd_htaccess_tricks', $rules );
 
     return $rules;
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Security
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_mobile_rewritecond() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    // No rewrite rules for multisite.
-    if ( is_multisite() ) {
-      return;
-    }
+  function get_dnd_htaccess_security() {
+    $rules = <<<HTACCESS
+    #BASIC ID=1
+    RedirectMatch 409 .(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$
+    ServerSignature Off
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteBase /
+      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+      RewriteRule ^readme*.*html$ /forbidden [L,QSA]
+      RewriteRule ^license*.*txt$ /forbidden [L,QSA]
+      RewriteRule ^wp-config*.*php$ /forbidden [L,QSA]
+    </IfModule>
+    #BASIC
 
-    $rules  = 'RewriteCond %{HTTP:X-Wap-Profile} !^[a-z0-9\"]+ [NC]' . PHP_EOL;
-    $rules .= 'RewriteCond %{HTTP:Profile} !^[a-z0-9\"]+ [NC]' . PHP_EOL;
-    $rules .= 'RewriteCond %{HTTP_USER_AGENT} !^.*(2.0\ MMP|240x320|400X240|AvantGo|BlackBerry|Blazer|Cellphone|Danger|DoCoMo|Elaine/3.0|EudoraWeb|Googlebot-Mobile|hiptop|IEMobile|KYOCERA/WX310K|LG/U990|MIDP-2.|MMEF20|MOT-V|NetFront|Newt|Nintendo\ Wii|Nitro|Nokia|Opera\ Mini|Palm|PlayStation\ Portable|portalmmm|Proxinet|ProxiNet|SHARP-TQ-GX10|SHG-i900|Small|SonyEricsson|Symbian\ OS|SymbianOS|TS21i-10|UP.Browser|UP.Link|webOS|Windows\ CE|WinWAP|YahooSeeker/M1A1-R2D2|iPhone|iPod|Android|BlackBerry9530|LG-TU915\ Obigo|LGE\ VX|webOS|Nokia5800).* [NC]' . PHP_EOL;
-    $rules .= 'RewriteCond %{HTTP_USER_AGENT} !^(w3c\ |w3c-|acs-|alav|alca|amoi|audi|avan|benq|bird|blac|blaz|brew|cell|cldc|cmd-|dang|doco|eric|hipt|htc_|inno|ipaq|ipod|jigs|kddi|keji|leno|lg-c|lg-d|lg-g|lge-|lg/u|maui|maxo|midp|mits|mmef|mobi|mot-|moto|mwbp|nec-|newt|noki|palm|pana|pant|phil|play|port|prox|qwap|sage|sams|sany|sch-|sec-|send|seri|sgh-|shar|sie-|siem|smal|smar|sony|sph-|symb|t-mo|teli|tim-|tosh|tsm-|upg1|upsi|vk-v|voda|wap-|wapa|wapi|wapp|wapr|webc|winw|winw|xda\ |xda-).* [NC]' . PHP_EOL;
+    #BLOCK WP FILE ACCESS  ID=2
+    # Block the include-only files.
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteBase /
+      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+      RewriteRule ^wp-admin/includes/ /forbidden [NC,L]
+      RewriteRule ^wp-includes/[^/]+.php$ /forbidden [NC,L]
+      RewriteRule ^wp-content/uploads/(.*).php$ /forbidden [NC,L]
+      RewriteRule ^wp-includes/js/tinymce/langs/.+.php /forbidden [NC,L]
+      RewriteRule ^wp-includes/theme-compat/ /forbidden [NC,L]
+    </IfModule>
+    #BLOCK WP FILE ACCESS
 
-    /**
-    * Filter rules for detect mobile version
-    *
-    * @since 2.0
-    *
-    * @param string $rules Rules that will be printed.
-    */
-    $rules = apply_filters( 'dnd_htaccess_mobile_rewritecond', $rules );
+    #BLOCK DEBUG LOG ACCESS
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteBase /
+      RewriteRule ^debug*.*log$ /forbidden [L,QSA]
+    </IfModule>
+    #BLOCK DEBUG LOG ACCESS
+
+    #FORBID PROXY COMMENT POSTING ID=7
+    <IfModule mod_rewrite.c>
+      RewriteEngine On
+      RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
+      RewriteCond %{REQUEST_METHOD} ^POST
+      RewriteCond %{HTTP:VIA} !^$ [OR]
+      RewriteCond %{HTTP:FORWARDED} !^$ [OR]
+      RewriteCond %{HTTP:USERAGENT_VIA} !^$ [OR]
+      RewriteCond %{HTTP:X_FORWARDED_FOR} !^$ [OR]
+      RewriteCond %{HTTP:X_FORWARDED_HOST} !^$ [OR]
+      RewriteCond %{HTTP:PROXY_CONNECTION} !^$ [OR]
+      RewriteCond %{HTTP:XPROXY_CONNECTION} !^$ [OR]
+      RewriteCond %{HTTP:HTTP_PC_REMOTE_ADDR} !^$ [OR]
+      RewriteCond %{HTTP:HTTP_CLIENT_IP} !^$
+      RewriteRule wp-comments-post\.php /forbidden [NC]
+    </IfModule>
+    #FORBID PROXY COMMENT POSTING
+
+    #WPSCAN ID=19
+    <IfModule mod_rewrite.c>
+      RewriteEngine on
+      RewriteRule ^(.*)/plugins/(.*)readme\.(txt|html)$ /forbidden [NC,L] 
+    </IfModule>
+    #WPSCAN
+
+    HTACCESS;
+
+    $rules = apply_filters( 'dnd_htaccess_security', $rules );
 
     return $rules;
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Mod Deflate
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_ssl_rewritecond() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    $rules  = 'RewriteCond %{HTTPS} on [OR]' . PHP_EOL;
-    $rules .= 'RewriteCond %{SERVER_PORT} ^443$ [OR]' . PHP_EOL;
-    $rules .= 'RewriteCond %{HTTP:X-Forwarded-Proto} https' . PHP_EOL;
-    $rules .= 'RewriteRule .* - [E=WPR_SSL:-https]' . PHP_EOL;
-
-    /**
-    * Filter rules for SSL requests
-    *
-    * @since 2.0
-    *
-    * @param string $rules Rules that will be printed.
-    */
-    $rules = apply_filters( 'dnd_htaccess_ssl_rewritecond', $rules );
-
-    return $rules;
-  }
-
-//-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
-//-----------------------------------------------------------------------------------
-
-  function dnd_get_webp_rewritecond( $cache_dir_path ) {
-    if ( ! get_dnd_option( 'cache_webp' ) ) {
-      return '';
-    }
-
-    $rules  = 'RewriteCond %{HTTP_ACCEPT} image/webp' . PHP_EOL;
-    $rules .= 'RewriteCond "' . $cache_dir_path . '/.no-webp" !-f' . PHP_EOL;
-    $rules .= 'RewriteRule .* - [E=WPR_WEBP:-webp]' . PHP_EOL;
-
-    /**
-    * Filter rules for webp.
-    *
-    * @since  3.4
-    * @author Grégory Viguier
-    *
-    * @param string $rules Rules that will be printed.
-    */
-    return apply_filters( 'dnd_webp_rewritecond', $rules );
-  }
-
-//-----------------------------------------------------------------------------------
-//  Rules to improve performances with GZIP Compression
-//-----------------------------------------------------------------------------------
-
-  function get_dnd_htaccess_mod_deflate() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+  /*function get_dnd_htaccess_mod_deflate() {
     $rules = '# Gzip compression' . PHP_EOL;
     $rules .= '<IfModule mod_deflate.c>' . PHP_EOL;
       $rules .= '# Active compression' . PHP_EOL;
@@ -414,65 +335,181 @@ if ( ! defined( 'ABSPATH' ) ) {
       $rules .= '</IfModule>' . PHP_EOL;
     $rules .= '</IfModule>' . PHP_EOL . PHP_EOL;
 
-    /**
-    * Filter rules to improve performances with GZIP Compression
-    *
-    * @since 1.0
-    *
-    * @param string $rules Rules that will be printed.
-    */
     $rules = apply_filters( 'dnd_htaccess_mod_deflate', $rules );
 
     return $rules;
-  }
+  }*/
 
 //-----------------------------------------------------------------------------------
-//  Rules to improve performances with Expires Headers
+//  Mod Expires
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_mod_expires() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+  function get_dnd_htaccess_mod_expires() {
     $rules = <<<HTACCESS
-  # Expires headers (for better cache control)
-  <IfModule mod_expires.c>
-    ExpiresActive on
-    # Perhaps better to whitelist expires rules? Perhaps.
-    ExpiresDefault                              "access plus 1 month"
-    # cache.appcache needs re-requests in FF 3.6 (thanks Remy ~Introducing HTML5)
-    ExpiresByType text/cache-manifest           "access plus 0 seconds"
-    # Your document html
-    ExpiresByType text/html                     "access plus 0 seconds"
-    # Data
-    ExpiresByType text/xml                      "access plus 0 seconds"
-    ExpiresByType application/xml               "access plus 0 seconds"
-    ExpiresByType application/json              "access plus 0 seconds"
-    # Feed
-    ExpiresByType application/rss+xml           "access plus 1 hour"
-    ExpiresByType application/atom+xml          "access plus 1 hour"
-    # Favicon (cannot be renamed)
-    ExpiresByType image/x-icon                  "access plus 1 week"
-    # Media: images, video, audio
-    ExpiresByType image/gif                     "access plus 4 months"
-    ExpiresByType image/png                     "access plus 4 months"
-    ExpiresByType image/jpeg                    "access plus 4 months"
-    ExpiresByType image/webp                    "access plus 4 months"
-    ExpiresByType video/ogg                     "access plus 1 month"
-    ExpiresByType audio/ogg                     "access plus 1 month"
-    ExpiresByType video/mp4                     "access plus 1 month"
-    ExpiresByType video/webm                    "access plus 1 month"
-    # HTC files  (css3pie)
-    ExpiresByType text/x-component              "access plus 1 month"
-    # Webfonts
-    ExpiresByType font/ttf                      "access plus 4 months"
-    ExpiresByType font/otf                      "access plus 4 months"
-    ExpiresByType font/woff                     "access plus 4 months"
-    ExpiresByType font/woff2                    "access plus 4 months"
-    ExpiresByType image/svg+xml                 "access plus 1 month"
-    ExpiresByType application/vnd.ms-fontobject "access plus 1 month"
-    # CSS and JavaScript
-    ExpiresByType text/css                      "access plus 1 year"
-    ExpiresByType application/javascript        "access plus 1 year"
-  </IfModule>
-  HTACCESS;
+    ############## Proper MIME type for all files ##############
+      <IfModule mod_mime.c>
+        # Standard text files
+        AddType text/html .html .htm
+        AddType text/css .css
+        AddType text/plain .txt
+        AddType text/richtext .rtf .rtx
+        AddType application/javascript .js
+        AddType text/x-javascript .js2
+        AddType text/javascript .js3
+        AddType text/x-js .js4
+        AddType text/xsd .xsd
+        AddType text/xsl .xsl
+        AddType text/xml .xml
+        AddType application/java .class
+        AddType application/json .json
+        AddType text/x-component .htc
+        # Feed files
+        AddType application/rss+xml .rss
+        AddType application/atom+xml .atom
+        # Image files
+        AddType image/svg+xml .svg .svgz
+        AddEncoding gzip .svgz  
+        AddType image/bmp .bmp
+        AddType image/gif .gif
+        AddType image/x-icon .ico
+        AddType image/jpeg .jpg .jpeg .jpe
+        AddType image/png .png
+        AddType image/webp .webp
+        AddType image/tiff .tif .tiff
+        # Audio files
+        AddType audio/midi .mid .midi
+        AddType audio/ogg .ogg
+        AddType audio/mpeg .mp3 .m4a
+        AddType audio/x-realaudio .ra .ram
+        AddType audio/wma .wma
+        AddType audio/wav .wav
+        # Movie files
+        AddType video/ogg .ogv
+        AddType video/webm .webm
+        AddType video/asf .asf .asx .wax .wmv .wmx
+        AddType video/avi .avi
+        AddType video/divx .divx
+        AddType video/quicktime .mov .qt
+        AddType video/mp4 .mp4 .m4v
+        AddType video/mpeg .mpeg .mpg .mpe
+        # Other
+        AddType application/x-gzip .gz .gzip
+        AddType application/zip .zip
+        AddType application/x-tar .tar
+        AddType application/x-shockwave-flash .swf
+        AddType text/cache-manifest appcache manifest
+        AddType application/octet-stream safariextz
+        AddType application/x-web-app-manifest+json webapp
+        AddType text/x-vcard .vcf
+        # Documents
+        AddType application/pdf .pdf
+        AddType application/vnd.ms-access .mdb
+        AddType application/vnd.ms-project .mpp
+        AddType application/vnd.ms-powerpoint .pot .pps .ppt .pptx .potx .ppam .ppsm .ppsx .pptm
+        AddType application/vnd.ms-excel .xla .xls .xlsx .xlt .xlw .xlsb .xlsm .xltx .xlam
+        AddType application/vnd.ms-write .wri
+        AddType application/vnd.ms-word .docx .dotx
+        AddType application/x-msdownload .exe
+        AddType application/vnd.oasis.opendocument.database .odb
+        AddType application/vnd.oasis.opendocument.chart .odc
+        AddType application/vnd.oasis.opendocument.formula .odf
+        AddType application/vnd.oasis.opendocument.graphics .odg
+        AddType application/vnd.oasis.opendocument.presentation .odp
+        AddType application/vnd.oasis.opendocument.spreadsheet .ods
+        AddType application/vnd.oasis.opendocument.text .odt
+        # Webfonts
+        AddType application/vnd.ms-fontobject .eot
+        AddType font/opentype .otf
+        AddType application/x-font-ttf .ttf .ttc
+        AddType application/x-font-woff .woff
+        AddType application/x-font-woff2 .woff2
+      </IfModule>
+
+    ############## Expires headers (for better cache control) ##############
+      <IfModule mod_expires.c>
+        # Enable expiration control
+        ExpiresActive On
+        # Default expiration: 1 hour after request
+        ExpiresDefault "access plus 1 year"
+        # Special requests
+        ExpiresByType text/cache-manifest "access plus 0 seconds"
+        # Standard text files expiration: 1 week after request
+        ExpiresByType text/html "access plus 30 seconds"
+        ExpiresByType text/css "access plus 1 year"
+        ExpiresByType text/plain "access plus 1 year"
+        ExpiresByType text/richtext "access plus 1 year"
+        ExpiresByType application/javascript "access plus 1 year"
+        ExpiresByType text/x-javascript "access plus 1 year"
+        ExpiresByType text/javascript "access plus 1 year"
+        ExpiresByType text/x-js "access plus 1 year"
+        ExpiresByType application/xhtml+xml "access plus 60 seconds"
+        ExpiresByType application/json "access plus 60 seconds"
+        ExpiresByType text/xsd "access plus 60 seconds
+        ExpiresByType text/xsl "access plus 60 seconds
+        ExpiresByType application/java "access plus 60 seconds
+        ExpiresByType text/x-component "access plus 60 seconds
+        # Data
+        ExpiresByType text/xml "access plus 60 seconds
+        ExpiresByType application/json "access plus 60 seconds
+        ExpiresByType application/xml "access plus 60 seconds
+        # Feed
+        ExpiresByType application/rss+xml "access plus 600 seconds
+        ExpiresByType application/atom+xml "access plus 600 seconds
+        # Image
+        ExpiresByType image/gif "access plus 1 year"
+        ExpiresByType image/jpeg "access plus 1 year"
+        ExpiresByType image/png "access plus 1 year"
+        ExpiresByType image/svg+xml "access plus 1 year"
+        ExpiresByType image/tiff "access plus 1 year"
+        ExpiresByType image/x-icon "access plus 1 year"
+        ExpiresByType images/bmp "access plus 1 year"
+        ExpiresByType image/webp "access plus 1 year"
+        # Audio
+        ExpiresByType audio/midi "access plus 1 year"
+        ExpiresByType audio/mpeg "access plus 1 year"
+        ExpiresByType audio/ogg "access plus 1 year"
+        ExpiresByType audio/x-realaudio "access plus 1 year"
+        ExpiresByType audio/wma "access plus 1 year"
+        ExpiresByType audio/wav "access plus 1 year"
+        # Movie
+        ExpiresByType video/avi "access plus 1 year"
+        ExpiresByType video/mpeg "access plus 1 year"
+        ExpiresByType video/mp4 "access plus 1 year"
+        ExpiresByType video/quicktime "access plus 1 year"
+        ExpiresByType video/webm "access plus 1 year"
+        ExpiresByType video/ogg "access plus 1 year"
+        ExpiresByType video/asf "access plus 1 year"
+        ExpiresByType video/divx "access plus 1 year"
+        # Other
+        ExpiresByType application/zip "access plus 1 year"
+        ExpiresByType application/x-tar "access plus 1 year"
+        ExpiresByType application/x-shockwave-flash "access plus 1 year"
+        ExpiresByType application/octet-stream "access plus 600 seconds"
+        ExpiresByType application/x-web-app-manifest+json "access plus 600 seconds"
+        # Documents
+        ExpiresByType application/pdf "access plus 1 year"
+        ExpiresByType application/vnd.ms-access "access plus 1 year"
+        ExpiresByType application/vnd.ms-project "access plus 1 year"
+        ExpiresByType application/vnd.ms-powerpoint "access plus 1 year"
+        ExpiresByType application/vnd.ms-excel "access plus 1 year"
+        ExpiresByType application/vnd.ms-write "access plus 1 year"
+        ExpiresByType application/x-msdownload "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.database "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.chart "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.formula "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.graphics "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.presentation "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.spreadsheet "access plus 1 year"
+        ExpiresByType application/vnd.oasis.opendocument.text "access plus 1 year"
+        # Webfonts
+        ExpiresByType application/vnd.ms-fontobject "access plus 1 year"
+        ExpiresByType font/opentype "access plus 1 year"
+        ExpiresByType application/x-font-ttf "access plus 1 year"
+        ExpiresByType application/x-font-woff "access plus 1 year"
+        ExpiresByType application/x-font-woff2 "access plus 1 year"
+      </IfModule>
+
+    HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_mod_expires', $rules );
 
@@ -480,70 +517,31 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Rules for default charset on static files
+//  htaccess Charset
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_charset() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
+  function get_dnd_htaccess_charset() {
     // Get charset of the blog.
     $charset = preg_replace( '/[^a-zA-Z0-9_\-\.:]+/', '', get_bloginfo( 'charset', 'display' ) );
+    $email = get_bloginfo( 'admin_email' );
 
-    $rules = "# Use $charset encoding for anything served text/plain or text/html" . PHP_EOL;
-    $rules .= "AddDefaultCharset $charset" . PHP_EOL;
-    $rules .= "# Force $charset for a number of file formats" . PHP_EOL;
-    $rules .= '<IfModule mod_mime.c>' . PHP_EOL;
-      $rules .= "AddCharset $charset .atom .css .js .json .rss .vtt .xml" . PHP_EOL;
-    $rules .= '</IfModule>' . PHP_EOL . PHP_EOL;
-
-    $rules .= '
+    $rules = <<<HTACCESS
+    # Use $charset encoding for anything served text/plain or text/html
+    AddDefaultCharset $charset
+    # Force $charset for a number of file formats
+    <IfModule mod_mime.c>
+      AddCharset $charset .atom .css .js .json .rss .vtt .xml
+    </IfModule>
     # Set the default language
     DefaultLanguage en-US
     # Set server timezone
     SetEnv TZ America/Chicago
     # Set the server administrator email
-    SetEnv SERVER_ADMIN ' . get_bloginfo( 'admin_email' ) . '
-    ';
+    SetEnv SERVER_ADMIN $email
 
-    return $rules;
-  }
+    HTACCESS;
 
-//-----------------------------------------------------------------------------------
-//  Rules for cache control
-//-----------------------------------------------------------------------------------
-
-  function get_dnd_htaccess_files_match() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    $rules = '<IfModule mod_alias.c>' . PHP_EOL;
-      $rules .= '<FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml)$">' . PHP_EOL;
-        $rules .= '<IfModule mod_headers.c>' . PHP_EOL;
-          $rules .= 'Header unset Pragma' . PHP_EOL;
-          $rules .= 'Header append Cache-Control "public"' . PHP_EOL;
-          $rules .= 'Header unset Last-Modified' . PHP_EOL;
-        $rules .= '</IfModule>' . PHP_EOL;
-      $rules .= '</FilesMatch>' . PHP_EOL . PHP_EOL;
-      $rules .= '<FilesMatch "\.(css|htc|js|asf|asx|wax|wmv|wmx|avi|bmp|class|divx|doc|docx|eot|exe|gif|gz|gzip|ico|jpg|jpeg|jpe|json|mdb|mid|midi|mov|qt|mp3|m4a|mp4|m4v|mpeg|mpg|mpe|mpp|otf|odb|odc|odf|odg|odp|ods|odt|ogg|pdf|png|pot|pps|ppt|pptx|ra|ram|svg|svgz|swf|tar|tif|tiff|ttf|ttc|wav|wma|wri|xla|xls|xlsx|xlt|xlw|zip)$">' . PHP_EOL;
-        $rules .= '<IfModule mod_headers.c>' . PHP_EOL;
-          $rules .= 'Header unset Pragma' . PHP_EOL;
-          $rules .= 'Header append Cache-Control "public"' . PHP_EOL;
-        $rules .= '</IfModule>' . PHP_EOL;
-      $rules .= '</FilesMatch>' . PHP_EOL;
-    $rules .= '</IfModule>' . PHP_EOL . PHP_EOL;
-
-    $rules = '
-    ####### Expire Headers #######
-      <FilesMatch "\.(html|htm|rtf|rtx|txt|xsd|xsl|xml|HTML|HTM|RTF|RTX|TXT|XSD|XSL|XML)$">
-        <IfModule mod_headers.c>
-          Header set Pragma "no-cache"
-          Header set Cache-Control "max-age=0, private, no-store, no-cache, must-revalidate"
-          Header set Expires "Wed, 11 Jan 2000 05:00:00 GMT"
-        </IfModule>
-      </FilesMatch>
-      <FilesMatch "\.(css|htc|less|js|js2|svg|svgz|SVG|SVGZ|js3|js4|CSS|HTC|LESS|JS|JS2|JS3|JS4|asf|asx|wax|wmv|wmx|avi|bmp|class|divx|doc|docx|eot|exe|gif|gz|gzip|ico|jpg|jpeg|jpe|json|mdb|mid|midi|mov|qt|mp3|m4a|mp4|m4v|mpeg|mpg|mpe|mpp|otf|odb|odc|odf|odg|odp|ods|odt|ogg|pdf|png|pot|pps|ppt|pptx|ra|ram|svg|svgz|swf|tar|tif|tiff|ttf|ttc|wav|wma|wri|woff|woff2|xla|xls|xlsx|xlt|xlw|zip|ASF|ASX|WAX|WMV|WMX|AVI|BMP|CLASS|DIVX|DOC|DOCX|EOT|EXE|GIF|GZ|GZIP|ICO|JPG|JPEG|JPE|JSON|MDB|MID|MIDI|MOV|QT|MP3|M4A|MP4|M4V|MPEG|MPG|MPE|MPP|OTF|ODB|ODC|ODF|ODG|ODP|ODS|ODT|OGG|PDF|PNG|POT|PPS|PPT|PPTX|RA|RAM|SVG|SVGZ|SWF|TAR|TIF|TIFF|TTF|TTC|WAV|WMA|WRI|WOFF2|WOFF|XLA|XLS|XLSX|XLT|XLW|ZIP)$">
-        <IfModule mod_headers.c>
-          Header set Pragma "public"
-          Header append Cache-Control "public"
-          Header unset Set-Cookie
-        </IfModule>
-      </FilesMatch>
-    ';
+    $rules = apply_filters( 'dnd_htaccess_charset', $rules );
 
     return $rules;
   }
@@ -552,14 +550,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 //  Rules to remove the etag
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_etag() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    $rules  = '# FileETag None is not enough for every server.' . PHP_EOL;
-    $rules .= '<IfModule mod_headers.c>' . PHP_EOL;
-    $rules .= 'Header unset ETag' . PHP_EOL;
-    $rules .= '</IfModule>' . PHP_EOL . PHP_EOL;
-    $rules .= '# Since we’re sending far-future expires, we don’t need ETags for static content.' . PHP_EOL;
-    $rules .= '# developer.yahoo.com/performance/rules.html#etags' . PHP_EOL;
-    $rules .= 'FileETag None' . PHP_EOL . PHP_EOL;
+  function get_dnd_htaccess_etag() {
+    $rules = <<<HTACCESS
+    # FileETag None is not enough for every server.
+    <IfModule mod_headers.c>
+    Header unset ETag
+    </IfModule>
+    FileETag None
+
+    HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_etag', $rules );
 
@@ -570,11 +569,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 //  Rules to Cross-origin fonts sharing when CDN is used
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_web_fonts_access() { // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals
-    if ( ! get_dnd_option( 'cdn', false ) ) {
-      return;
-    }
-
+  /*function get_dnd_htaccess_web_fonts_access() {
     $rules  = '# Send CORS headers if browsers request them; enabled by default for images.' . PHP_EOL;
     $rules  .= '<IfModule mod_setenvif.c>' . PHP_EOL;
       $rules  .= '<IfModule mod_headers.c>' . PHP_EOL;
@@ -593,8 +588,10 @@ if ( ! defined( 'ABSPATH' ) ) {
       $rules .= '</IfModule>' . PHP_EOL;
     $rules .= '</FilesMatch>' . PHP_EOL . PHP_EOL;
 
+    $rules = apply_filters( 'dnd_htaccess_web_fonts_access', $rules );
+
     return $rules;
-  }
+  }*/
 
 //-----------------------------------------------------------------------------------
 //  Tell if WP rewrite rules are present in a given string.
@@ -611,7 +608,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Check if WP dnd htaccess rules are already present in the file
+//  Check if DND htaccess rules are already present in the file
 //-----------------------------------------------------------------------------------
 
   function dnd_check_htaccess_rules() {

@@ -20,8 +20,16 @@ if ( ! defined( 'ABSPATH' ) ) {
   // Include extra Core functions
   include 'includes/library.php';
 
+  // Constants
+  include 'includes/constants.php';
+
+  // Constants
+  include 'includes/updates.php';
+
   // Localhost Features
   if ( is_local_custom() ) {
     include 'includes/localize.php';
   }
 
+  // Htaccess
+  include 'includes/htaccess.php';

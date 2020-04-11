@@ -14,12 +14,52 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 //-----------------------------------------------------------------------------------
-//  Set Contstants
+//  Update & Install Actions
 //-----------------------------------------------------------------------------------
 
-  // DND defines.
-  define( 'DND_VERSION',            '1.0.4' );
-  define( 'DND_PATH',               ealpath( get_template_directory() ) . '/' );
-  define( 'DND_INCLUDES_PATH',      realpath( DND_PATH . 'includes/' ) . '/' );
-  define( 'DND_LOG_PATH',           WP_CONTENT_DIR . 'debug.log' );
-  define( 'DND_LOG_URL',            WP_CONTENT_URL . 'debug.log' );
+  add_action( 'upgrader_process_complete', function( $info ) {
+    if ( ! isset( $info['result']['destination_name'] ) || $info['result']['destination_name'] !== 'design-and-develop' ) return;
+
+    flush_dnd_htaccess();
+    dnd_update_wp_config();
+  }, 10 );
+
+  add_action( 'after_switch_theme', function() {
+    flush_dnd_htaccess();
+    dnd_update_wp_config();
+  }, 10 );
+
+//-----------------------------------------------------------------------------------
+//  WP-Config
+//-----------------------------------------------------------------------------------
+
+  function dnd_update_wp_config() {
+    if ( ! class_exists( 'WPConfigTransformer' ) ) {
+      include_once DND_LIBRARIES_PATH . 'wp-config-transformer.php';
+    }
+    $file = dnd_locate_wp_config();
+    $config_transformer = new WPConfigTransformer( $file );
+    $config_transformer->update( 'constant', 'WP_DEBUG', 'true', array( 'raw' => true ) );
+    $config_transformer->update( 'constant', 'WP_DEBUG_LOG', 'true', array( 'raw' => true ) );
+    $config_transformer->update( 'constant', 'WP_DEBUG_DISPLAY', 'false', array( 'raw' => true ) );
+    $config_transformer->update( 'constant', 'SCRIPT_DEBUG', 'false', array( 'raw' => true ) );
+    $config_transformer->update( 'constant', 'FORCE_SSL_ADMIN', 'true', array( 'raw' => true ) );
+  }
+
+//-----------------------------------------------------------------------------------
+//  Find Files
+//-----------------------------------------------------------------------------------
+
+  function dnd_locate_wp_config() {
+    if ( file_exists( ABSPATH . 'wp-config.php' ) )
+      $path = ABSPATH . 'wp-config.php';
+    elseif ( file_exists( ABSPATH . '../wp-config.php' ) && ! file_exists( ABSPATH . '/../wp-settings.php' ) )
+      $path = ABSPATH . '../wp-config.php';
+    else
+      $path = false;
+
+    if ( $path )
+      $path = realpath( $path );
+
+    return $path;
+  }
