@@ -351,31 +351,37 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   //------------------ Modify Array ------------------//
-  function array_move_to_top( &$array, $key ) {
-    $temp = array($key => $array[$key]);
-    unset($array[$key]);
-    $array = $temp + $array;
-  }
-
-  function array_move_to_bottom( &$array, $key ) {
-    $value = $array[$key];
-    unset($array[$key]);
-    $array[$key] = $value;
-  }
-
-  function post_to_edit( $object, $debug = true ) {
-    if ( is_int( $object ) ) {
-    } elseif ( method_exists( $object, 'get_id' ) ) {
-      $id = $object->get_id();
-    } elseif ( isset( $object->ID ) ) {
-      $id = $object->ID;
-    } elseif ( $debug ) {
-      return '(couldn\'t find object ID: ' . print_r( $object, true ) . ')';
-    } else {
-      return '';
+  if ( ! function_exists( 'array_move_to_top' ) ) {
+    function array_move_to_top( &$array, $key ) {
+      $temp = array($key => $array[$key]);
+      unset($array[$key]);
+      $array = $temp + $array;
     }
+  }
 
-    return '<a href="' . get_edit_post_link( $id ) . '" target="_blank">' . get_edit_post_link( $id ) . '</a>';
+  if ( ! function_exists( 'array_move_to_top' ) ) {
+    function array_move_to_bottom( &$array, $key ) {
+      $value = $array[$key];
+      unset($array[$key]);
+      $array[$key] = $value;
+    }
+  }
+
+  if ( ! function_exists( 'post_to_edit' ) ) {
+    function post_to_edit( $object, $debug = true ) {
+      if ( is_int( $object ) ) {
+      } elseif ( method_exists( $object, 'get_id' ) ) {
+        $id = $object->get_id();
+      } elseif ( isset( $object->ID ) ) {
+        $id = $object->ID;
+      } elseif ( $debug ) {
+        return '(couldn\'t find object ID: ' . print_r( $object, true ) . ')';
+      } else {
+        return '';
+      }
+
+      return '<a href="' . get_edit_post_link( $id ) . '" target="_blank">' . get_edit_post_link( $id ) . '</a>';
+    }
   }
 
 //-----------------------------------------------------------------------------------
@@ -531,3 +537,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
     return true;
   }
+
+//-----------------------------------------------------------------------------------
+//  Menu
+//-----------------------------------------------------------------------------------
+
+  add_theme_support( 'menus' );
