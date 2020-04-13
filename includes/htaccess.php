@@ -175,6 +175,7 @@ $marker .= <<<HTACCESS
     Header unset Cache-Control
   </FilesMatch>
 
+
 HTACCESS;
 
     $marker .= get_dnd_htaccess_charset();
@@ -212,6 +213,7 @@ $rules = <<<HTACCESS
 ############## MP4 Fixes ##############
   SetEnvIfNoCase Request_URI get_file\.mp4$ no-gzip dont-vary
 
+
 HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_tricks', $rules );
@@ -234,6 +236,7 @@ $rules .= <<<HTACCESS
   order deny,allow
   deny from all
 </Files>
+
 HTACCESS;
 
 $rules .= <<<HTACCESS
@@ -296,6 +299,7 @@ ServerSignature Off
   RewriteRule ^(.*)/plugins/(.*)readme\.(txt|html)$ /forbidden [NC,L] 
 </IfModule>
 #WPSCAN
+
 
 HTACCESS;
 
@@ -521,6 +525,7 @@ $rules = <<<HTACCESS
     ExpiresByType application/x-font-woff2 "access plus 1 year"
   </IfModule>
 
+
 HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_mod_expires', $rules );
@@ -551,6 +556,7 @@ SetEnv TZ America/Chicago
 # Set the server administrator email
 SetEnv SERVER_ADMIN $email
 
+
 HTACCESS;
 
     $rules = apply_filters( 'dnd_htaccess_charset', $rules );
@@ -569,6 +575,7 @@ $rules = <<<HTACCESS
 Header unset ETag
 </IfModule>
 FileETag None
+
 
 HTACCESS;
 
