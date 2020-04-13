@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   add_action( 'upgrader_process_complete', function( $info ) {
-    if ( ! isset( $info['result']['destination_name'] ) || $info['result']['destination_name'] !== 'design-and-develop' ) return;
+    if ( ! isset( $info->result->destination_name ) || $info->result->destination_name !== 'design-and-develop' ) return;
 
     flush_dnd_htaccess();
     dnd_update_wp_config();
