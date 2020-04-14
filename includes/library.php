@@ -539,7 +539,11 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  Menu
+//  Add Basic WP Features
 //-----------------------------------------------------------------------------------
 
-  add_theme_support( 'menus' );
+  add_action( 'after_theme_setup', function() {
+    add_theme_support( 'post-thumbnails' );
+    add_theme_support( 'menus' );
+    add_theme_support( 'html5' );
+  });
