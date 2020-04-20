@@ -481,16 +481,6 @@ if ( ! defined( 'ABSPATH' ) ) {
   }
 
 //-----------------------------------------------------------------------------------
-//  WooCommerce
-//-----------------------------------------------------------------------------------
-
-  // Add Theme Support
-  function add_woocommerce_support_custom() {
-    add_theme_support( 'woocommerce' );
-  }
-  add_action( 'after_setup_theme', 'add_woocommerce_support_custom' );
-
-//-----------------------------------------------------------------------------------
 //  Github Plugin Organization
 //-----------------------------------------------------------------------------------
 
@@ -543,6 +533,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 //-----------------------------------------------------------------------------------
 
   add_action( 'after_theme_setup', function() {
+    add_theme_support( 'automatic-feed-links' );
+    add_theme_support( 'title-tag' );
+    add_theme_support( 'widget-customizer' );
+    add_theme_support( 'woocommerce' );
     add_theme_support( 'post-thumbnails' );
     add_theme_support( 'menus' );
     add_theme_support( 'html5' );

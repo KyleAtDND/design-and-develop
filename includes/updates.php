@@ -20,12 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) {
   add_action( 'upgrader_process_complete', function( $info ) {
     if ( ! isset( $info->result->destination_name ) || $info->result->destination_name !== 'design-and-develop' ) return;
 
-    flush_dnd_htaccess();
+    dnd_flush_logs();
+    dnd_flush_htaccess();
     dnd_update_wp_config();
   }, 10 );
 
   add_action( 'after_switch_theme', function() {
-    flush_dnd_htaccess();
+    dnd_flush_logs();
+    dnd_flush_htaccess();
     dnd_update_wp_config();
   }, 10 );
 
@@ -37,6 +39,7 @@ if ( ! defined( 'ABSPATH' ) ) {
     if ( ! class_exists( 'WPConfigTransformer' ) ) {
       include_once DND_LIBRARIES_PATH . 'wp-config-transformer.php';
     }
+
     $file = dnd_locate_wp_config();
     $config_transformer = new WPConfigTransformer( $file );
     $config_transformer->update( 'constant', 'WP_DEBUG', 'true', array( 'raw' => true ) );
@@ -44,6 +47,15 @@ if ( ! defined( 'ABSPATH' ) ) {
     $config_transformer->update( 'constant', 'WP_DEBUG_DISPLAY', 'false', array( 'raw' => true ) );
     $config_transformer->update( 'constant', 'SCRIPT_DEBUG', 'false', array( 'raw' => true ) );
     $config_transformer->update( 'constant', 'FORCE_SSL_ADMIN', 'true', array( 'raw' => true ) );
+    $config_transformer->update( 'constant', 'DISALLOW_FILE_EDIT', 'true', array( 'raw' => true ) );
+  }
+
+//-----------------------------------------------------------------------------------
+//  Flush Logs
+//-----------------------------------------------------------------------------------
+
+  function dnd_flush_logs() {
+    file_put_contents( WP_CONTENT_DIR . '/debug.log', '' );
   }
 
 //-----------------------------------------------------------------------------------

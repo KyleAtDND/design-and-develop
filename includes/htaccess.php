@@ -20,6 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   function dnd_direct_filesystem() {
     require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
     require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-direct.php';
+
     return new WP_Filesystem_Direct( new StdClass() );
   }
 
@@ -78,7 +79,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 //  Flush rules
 //-----------------------------------------------------------------------------------
 
-  function flush_dnd_htaccess( $remove_rules = false ) {
+  function dnd_flush_htaccess( $remove_rules = false ) {
     global $is_apache;
 
     if ( ! $is_apache || ( apply_filters( 'dnd_disable_htaccess', false ) && ! $remove_rules ) ) {
@@ -161,30 +162,13 @@ if ( ! defined( 'ABSPATH' ) ) {
     // Recreate DND marker.
     $marker = '# BEGIN DND Theme v' . DND_VERSION . PHP_EOL;
 
-$marker .= <<<HTACCESS
-############## Essentials ##############
-  # Limit server request methods to GET and PUT
-  Options -ExecCGI -Indexes +FollowSymLinks
-  # Rewrite
-  RewriteEngine on
-  RewriteOptions Inherit
-  RewriteBase /
-############## Performance ##############
-  # Explicitly disable caching for scripts and other dynamic files
-  <FilesMatch "\.(pl|php|cgi|spl|scgi|fcgi)$">
-    Header unset Cache-Control
-  </FilesMatch>
-
-
-HTACCESS;
-
-    $marker .= get_dnd_htaccess_charset();
-    $marker .= get_dnd_htaccess_etag();
-    //$marker .= get_dnd_htaccess_web_fonts_access();
+    $marker .= get_dnd_htaccess_defaults();
+    $marker .= get_dnd_custom_error_pages();
     $marker .= get_dnd_htaccess_mod_expires();
-    //$marker .= get_dnd_htaccess_mod_deflate();
+    $marker .= get_dnd_htaccess_etag();
     $marker .= get_dnd_htaccess_security();
-    $marker .= get_dnd_htaccess_tricks();
+    //$marker .= get_dnd_htaccess_mod_deflate();
+    //$marker .= get_dnd_htaccess_web_fonts_access();
 
     $marker .= '# END DND Theme' . PHP_EOL;
 
@@ -194,11 +178,62 @@ HTACCESS;
   }
 
 //-----------------------------------------------------------------------------------
+//  Custom Error Pages
+//-----------------------------------------------------------------------------------
+
+  function get_dnd_custom_error_pages() {
+    $admin_email = get_bloginfo( 'admin_email' );
+    $image = 'data:image/png;base64,ivborw0kggoaaaansuheugaaaboaaaaacayaaacpskzoaaaabhncsvqicagifahkiaaaaalwsflzaaalegaacxib0t1+/aaaabz0rvh0q3jlyxrpb24gvgltzqaxmc8yos8xmikqq3kaaaacdevydfnvznr3yxjlaefkb2jliezpcmv3b3jrcybduzvxtem2aaabhkleqvriib2vyw6eiaxfw5idr///qx9sfg3pleyj3tawi5embqro7vhawieeerhs6x7mtmxmvv6+z3tpmuyskftm/r0feag2bbmv+gc4nzzn+dn4hacrea3r+hi3bcuu68jlskhvilw073twaylq9+f9ipqmsfq+fwskhdo/awmutjxrouarqnerkod5lq7rxms5inmerkoer/qmvuaplzdhczrhgn4csegy+ahmqgcks5rrhv/eeh455x5krmq2yhqdibdo6ncg/kzwl7m8xdys1/mio0njqdulls81x6/x6ar0nqbsjcpeznlzrzn477nkurn2nus8sjzmeii0tfmiyxuuxphvwjpjkbx0btunshrihvv70bv8itxq6asoi/zicbu6ygaaaabjru5erkjggg==';
+
+$rules = <<<HTACCESS
+# -----------------------------------------------------------------------------------
+# Custom Pages
+# -----------------------------------------------------------------------------------
+
+# Replace the mailto in the ErrorDocument
+ErrorDocument 403 "<div style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;background-image: url($image): ;margin: 0;font-family: &quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;font-size: 14px;line-height: 1.428571429;color: rgb(0, 0, 0);background-color: rgb(255, 255, 255);'><div class='container' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;padding-right: 15px;padding-left: 15px;margin-right: auto;margin-left: auto;'><div class='row' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;margin-right: -15px;margin-left: -15px;'><div class='col-md-12' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;position: relative;min-height: 1px;padding-right: 15px;padding-left: 15px;width: 100%;'><div class='error-template' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;padding: 40px 15px;text-align: center;'><h1 style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;margin: .67em 0;font-size: 36px;font-family: &quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;font-weight: 500;line-height: 1.1;margin-top: 20px;margin-bottom: 5px;'>Oops!</h1><h2 style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;orphans: 3;widows: 3;page-break-after: avoid;font-family: &quot;Helvetica Neue&quot;,Helvetica,Arial,sans-serif;font-weight: 500;line-height: 1.1;margin-top: 5px;margin-bottom: 15px;font-size: 30px;'>403 Unauthorized</h2><div class='error-details' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;'>Sorry, an error has occurred.<br>We were not able to load the page due to an authorization error.</div><div class='error-actions' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;margin-top: 15px;margin-bottom: 15px;'><a href='mailto:$admin_email' class='btn btn-primary btn-lg' style='-webkit-box-sizing: border-box;-moz-box-sizing: border-box;box-sizing: border-box;text-decoration: none;color: rgb(255, 255, 255);display: inline-block;padding: 10px 16px;margin-bottom: 0;font-size: 18px;font-weight: normal;line-height: 1.33;text-align: center;white-space: nowrap;vertical-align: middle;cursor: pointer;border: 1px solid transparent;-webkit-user-select: none;-moz-user-select: none;-ms-user-select: none;-o-user-select: none;user-select: none;background-color: rgb(0, 0, 0);border-color: rgb(0, 0, 0);margin-right: 10px;'>Report Error</a></div></div></div></div></div></div>"
+
+<Files 403.shtml>
+order allow,deny
+allow from all
+</Files>
+
+
+HTACCESS;
+
+    $rules = apply_filters( 'dnd_custom_error_pages', $rules );
+
+    return $rules;
+  }
+
+//-----------------------------------------------------------------------------------
 //  Tricks
 //-----------------------------------------------------------------------------------
 
-  function get_dnd_htaccess_tricks() {
+  function get_dnd_htaccess_defaults() {
+    // Get charset of the blog.
+    $charset = preg_replace( '/[^a-zA-Z0-9_\-\.:]+/', '', get_bloginfo( 'charset', 'display' ) );
+    $email = get_bloginfo( 'admin_email' );
+
 $rules = <<<HTACCESS
+# -----------------------------------------------------------------------------------
+# Defaults and Basics
+# -----------------------------------------------------------------------------------
+
+############## Essentials ##############
+  # Limit server request methods to GET and PUT
+  Options -ExecCGI -MultiViews -Indexes +FollowSymLinks
+  # Rewrite
+  RewriteEngine on
+  RewriteOptions Inherit
+  RewriteBase /
+
+############## Performance ##############
+  # Explicitly disable caching for scripts and other dynamic files
+  <FilesMatch "\.(pl|php|cgi|spl|scgi|fcgi)$">
+    Header unset Cache-Control
+  </FilesMatch>
+
 ############## Usability Tricks ##############
   # Automatically corect simple speling erors
   <IfModule mod_speling.c>
@@ -210,13 +245,30 @@ $rules = <<<HTACCESS
       Header set Content-Disposition inline
     </FilesMatch>
   </IfModule>
+  # Directory Index
+  DirectoryIndex index.php index.html index.htm
+
 ############## MP4 Fixes ##############
   SetEnvIfNoCase Request_URI get_file\.mp4$ no-gzip dont-vary
+
+############## Server Defaults ##############
+  # Use $charset encoding for anything served text/plain or text/html
+  AddDefaultCharset $charset
+  # Force $charset for a number of file formats
+  <IfModule mod_mime.c>
+    AddCharset $charset .atom .css .js .json .rss .vtt .xml
+  </IfModule>
+  # Set the default language
+  DefaultLanguage en-US
+  # Set server timezone
+  SetEnv TZ America/Chicago
+  # Set the server administrator email
+  SetEnv SERVER_ADMIN $email
 
 
 HTACCESS;
 
-    $rules = apply_filters( 'dnd_htaccess_tricks', $rules );
+    $rules = apply_filters( 'dnd_htaccess_defaults', $rules );
 
     return $rules;
   }
@@ -231,15 +283,16 @@ HTACCESS;
 
     if ( $block )
 $rules .= <<<HTACCESS
+# -----------------------------------------------------------------------------------
+# Security
+# -----------------------------------------------------------------------------------
+
 # Block WordPress xmlrpc.php requests
 <Files xmlrpc.php>
   order deny,allow
   deny from all
 </Files>
 
-HTACCESS;
-
-$rules .= <<<HTACCESS
 #BASIC ID=1
 RedirectMatch 409 .(htaccess|htpasswd|ini|phps|fla|psd|log|sh)$
 ServerSignature Off
@@ -247,9 +300,9 @@ ServerSignature Off
   RewriteEngine On
   RewriteBase /
   RewriteCond %{HTTP_COOKIE} !^.*wordpress_logged_in.*$ [NC]
-  RewriteRule ^readme*.*html$ /forbidden [L,QSA]
-  RewriteRule ^license*.*txt$ /forbidden [L,QSA]
-  RewriteRule ^wp-config*.*php$ /forbidden [L,QSA]
+  RewriteRule ^readme*.*html$ - [R=403,NC,L]
+  RewriteRule ^license*.*txt$ - [R=403,NC,L]
+  RewriteRule ^wp-config*.*php$ - [R=403,NC,L]
 </IfModule>
 #BASIC
 
@@ -271,7 +324,7 @@ ServerSignature Off
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^debug*.*log$ /forbidden [L,QSA]
+  RewriteRule ^debug*.*log$ - [R=403,NC,L]
 </IfModule>
 #BLOCK DEBUG LOG ACCESS
 
@@ -313,6 +366,9 @@ HTACCESS;
 //-----------------------------------------------------------------------------------
 
   /*function get_dnd_htaccess_mod_deflate() {
+    # -----------------------------------------------------------------------------------
+    # Deflate
+    # -----------------------------------------------------------------------------------
     $rules = '# Gzip compression' . PHP_EOL;
     $rules .= '<IfModule mod_deflate.c>' . PHP_EOL;
       $rules .= '# Active compression' . PHP_EOL;
@@ -362,6 +418,10 @@ HTACCESS;
 
   function get_dnd_htaccess_mod_expires() {
 $rules = <<<HTACCESS
+# -----------------------------------------------------------------------------------
+# Expires
+# -----------------------------------------------------------------------------------
+
 ############## Proper MIME type for all files ##############
   <IfModule mod_mime.c>
     # Standard text files
@@ -534,42 +594,15 @@ HTACCESS;
   }
 
 //-----------------------------------------------------------------------------------
-//  htaccess Charset
-//-----------------------------------------------------------------------------------
-
-  function get_dnd_htaccess_charset() {
-    // Get charset of the blog.
-    $charset = preg_replace( '/[^a-zA-Z0-9_\-\.:]+/', '', get_bloginfo( 'charset', 'display' ) );
-    $email = get_bloginfo( 'admin_email' );
-
-$rules = <<<HTACCESS
-# Use $charset encoding for anything served text/plain or text/html
-AddDefaultCharset $charset
-# Force $charset for a number of file formats
-<IfModule mod_mime.c>
-  AddCharset $charset .atom .css .js .json .rss .vtt .xml
-</IfModule>
-# Set the default language
-DefaultLanguage en-US
-# Set server timezone
-SetEnv TZ America/Chicago
-# Set the server administrator email
-SetEnv SERVER_ADMIN $email
-
-
-HTACCESS;
-
-    $rules = apply_filters( 'dnd_htaccess_charset', $rules );
-
-    return $rules;
-  }
-
-//-----------------------------------------------------------------------------------
 //  Rules to remove the etag
 //-----------------------------------------------------------------------------------
 
   function get_dnd_htaccess_etag() {
 $rules = <<<HTACCESS
+# -----------------------------------------------------------------------------------
+# ETag
+# -----------------------------------------------------------------------------------
+
 # FileETag None is not enough for every server.
 <IfModule mod_headers.c>
 Header unset ETag
@@ -589,6 +622,10 @@ HTACCESS;
 //-----------------------------------------------------------------------------------
 
   /*function get_dnd_htaccess_web_fonts_access() {
+    # -----------------------------------------------------------------------------------
+    # CORS
+    # -----------------------------------------------------------------------------------
+
     $rules  = '# Send CORS headers if browsers request them; enabled by default for images.' . PHP_EOL;
     $rules  .= '<IfModule mod_setenvif.c>' . PHP_EOL;
       $rules  .= '<IfModule mod_headers.c>' . PHP_EOL;

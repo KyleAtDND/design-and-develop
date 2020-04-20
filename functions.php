@@ -23,7 +23,7 @@ if ( ! defined( 'ABSPATH' ) ) {
   // Constants
   include 'includes/constants.php';
 
-  // Constants
+  // When the theme updates
   include 'includes/updates.php';
 
   // Localhost Features
