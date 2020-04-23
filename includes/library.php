@@ -532,7 +532,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 //  Add Basic WP Features
 //-----------------------------------------------------------------------------------
 
-  add_action( 'after_theme_setup', function() {
+  add_action( 'after_setup_theme', function() {
     add_theme_support( 'automatic-feed-links' );
     add_theme_support( 'title-tag' );
     add_theme_support( 'widget-customizer' );
