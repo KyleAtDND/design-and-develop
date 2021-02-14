@@ -17,18 +17,31 @@ if ( ! defined( 'ABSPATH' ) ) {
 //  Update & Install Actions
 //-----------------------------------------------------------------------------------
 
-  add_action( 'upgrader_process_complete', function( $info ) {
-    if ( ! isset( $info->result->destination_name ) || $info->result->destination_name !== 'design-and-develop' ) return;
+  // Clear Cache on Updates
+  add_action( 'upgrader_process_complete', function( $info, $test = '' ) {
+    if ( get_class( $info ) !== 'Plugin_Upgrader' ) {
+      write_log($info);
+      return;
+    }
 
-    dnd_flush_logs();
-    dnd_flush_htaccess();
-    dnd_update_wp_config();
+    if ( function_exists( 'Swift_Performance_Cache::clear_all_cache' ) ) {
+      Swift_Performance_Cache::clear_all_cache();
+    }
+    wp_cache_flush();
+  }, 0, );
+
+  add_action( 'upgrader_process_complete', function( $info, $test = '' ) {
+    if ( get_class( $info ) === 'Plugin_Upgrader' ) return;
+
+    //dnd_flush_logs();
+    //dnd_flush_htaccess();
+    //dnd_update_wp_config();
   }, 10 );
 
   add_action( 'after_switch_theme', function() {
-    dnd_flush_logs();
-    dnd_flush_htaccess();
-    dnd_update_wp_config();
+    //dnd_flush_logs();
+    //dnd_flush_htaccess();
+    //dnd_update_wp_config();
   }, 10 );
 
 //-----------------------------------------------------------------------------------
