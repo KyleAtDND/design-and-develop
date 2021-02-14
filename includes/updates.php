@@ -20,13 +20,13 @@ if ( ! defined( 'ABSPATH' ) ) {
   // Clear Cache on Updates
   add_action( 'upgrader_process_complete', function( $info, $test = '' ) {
     if ( get_class( $info ) !== 'Plugin_Upgrader' ) {
-      write_log($info);
       return;
     }
 
-    if ( function_exists( 'Swift_Performance_Cache::clear_all_cache' ) ) {
+    if ( class_exists( 'Swift_Performance_Cache' ) ) {
       Swift_Performance_Cache::clear_all_cache();
     }
+
     wp_cache_flush();
   }, 0, );
 
