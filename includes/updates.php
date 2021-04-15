@@ -27,6 +27,11 @@ if ( ! defined( 'ABSPATH' ) ) {
       Swift_Performance_Cache::clear_all_cache();
     }
 
+    if ( class_exists( 'Nginx_Helper' ) ) {
+      global $nginx_purger;
+      $nginx_purger->purge_all();
+    }
+
     wp_cache_flush();
   }, 0, );
 
